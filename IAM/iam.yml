@@ -1,21 +1,28 @@
-# this cloudformation create user and policy to list ec2 
-
 AWSTemplateFormatVersion: "2010-09-09"
-Description: "CloudFormation template to create an IAM user with permissions to list EC2 instances."
+Description: "CloudFormation template to create an IAM user with a password and permissions to list EC2 instances and change their own password."
 
 Parameters:
   IAMUserName:
     Type: String
     Description: "Name of the IAM User to be created."
 
+  IAMUserPassword:
+    Type: String
+    NoEcho: true  # Hides password from logs for security
+    Description: "Initial password for the IAM user."
+
 Resources:
   IAMUser:
     Type: "AWS::IAM::User"
     Properties:
       UserName: !Ref IAMUserName
+      LoginProfile:
+        Password: !Ref IAMUserPassword
+        PasswordResetRequired: true  # User must change password at first login
 
   ListEC2InstancesPolicy:
     Type: "AWS::IAM::Policy"
+    DependsOn: IAMUser  # Ensures the user is created first
     Properties:
       PolicyName: "ListEC2InstancesPolicy"
       PolicyDocument:
@@ -28,7 +35,26 @@ Resources:
       Users:
         - !Ref IAMUserName
 
+  ChangeOwnPasswordPolicy:
+    Type: "AWS::IAM::Policy"
+    DependsOn: IAMUser
+    Properties:
+      PolicyName: "ChangeOwnPasswordPolicy"
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: "Allow"
+            Action:
+              - "iam:ChangePassword"
+            Resource: !Sub "arn:aws:iam::${AWS::AccountId}:user/${IAMUserName}"
+      Users:
+        - !Ref IAMUserName
+
 Outputs:
   IAMUserArn:
     Description: "ARN of the created IAM user"
     Value: !GetAtt IAMUser.Arn
+
+  IAMUserLoginURL:
+    Description: "AWS Management Console Login URL"
+    Value: "https://console.aws.amazon.com/"
