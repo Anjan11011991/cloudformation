@@ -1,0 +1,34 @@
+# this cloudformation create user and policy to list ec2 
+
+AWSTemplateFormatVersion: "2010-09-09"
+Description: "CloudFormation template to create an IAM user with permissions to list EC2 instances."
+
+Parameters:
+  IAMUserName:
+    Type: String
+    Description: "Name of the IAM User to be created."
+
+Resources:
+  IAMUser:
+    Type: "AWS::IAM::User"
+    Properties:
+      UserName: !Ref IAMUserName
+
+  ListEC2InstancesPolicy:
+    Type: "AWS::IAM::Policy"
+    Properties:
+      PolicyName: "ListEC2InstancesPolicy"
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: "Allow"
+            Action:
+              - "ec2:DescribeInstances"
+            Resource: "*"
+      Users:
+        - !Ref IAMUserName
+
+Outputs:
+  IAMUserArn:
+    Description: "ARN of the created IAM user"
+    Value: !GetAtt IAMUser.Arn
